@@ -79,7 +79,7 @@ app.post("/", async (req, res) => {
 
     // SEND REPLY TO WHATSAPP
     await axios.post(
-      `${WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
+      `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
