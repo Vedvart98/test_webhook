@@ -92,13 +92,33 @@ app.post("/", async (req, res) => {
     console.log("User:", from);
     console.log("Message:", text);
 
+    const aiResponse = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama3-8b-8192",
+        messages: [
+          { role: "system", content: "You are a helpful WhatsApp assistant." },
+          { role: "user", content: text }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const reply = aiResponse.data.choices[0].message.content;
+
     // 🔥 SEND TEST REPLY
     await axios.post(
       `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
-        text: { body: "✅ Bot is working! This is a test reply." }
+        // text: { body: "✅ Bot is working! This is a test reply." }
+        text: { body: reply }
       },
       {
         headers: {
