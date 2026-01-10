@@ -1,55 +1,3 @@
-// // // Import Express.js
-// // const express = require('express');
-
-// // // Create an Express app
-// // const app = express();
-
-// // // Middleware to parse JSON bodies
-// // app.use(express.json());
-
-// // // Set port and verify_token
-// // const port = process.env.PORT || 3000;
-// // const verifyToken = process.env.VERIFY_TOKEN;
-
-// // // Route for GET requests
-// // app.get('/', (req, res) => {
-// //   const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
-
-// //   if (mode === 'subscribe' && token === verifyToken) {
-// //     console.log('WEBHOOK VERIFIED');
-// //     res.status(200).send(challenge);
-// //   } else {
-// //     res.status(403).end();
-// //   }
-// // });
-
-// // // Route for POST requests
-// // app.post('/', (req, res) => {
-// //   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-// //   console.log(`\n\nWebhook received ${timestamp}\n`);
-// //   console.log(JSON.stringify(req.body, null, 2));
-// //   res.status(200).end();
-// // });
-
-// // // Start the server
-// // app.listen(port, () => {
-// //   console.log(`\nListening on port ${port}\n`);
-// // });
-
-
-// require('dotenv').config();
-// const express = require('express');
-// const webhookRoutes = require('./routes/webhook');
-
-// const app = express();
-// app.use(express.json());
-
-// app.use('/webhook', webhookRoutes);
-
-// app.listen(process.env.PORT, () => {
-//   console.log(`Server running on port ${process.env.PORT}`);
-// });
-
 const express = require("express");
 const axios = require("axios");
 
@@ -73,8 +21,7 @@ app.get("/", (req, res) => {
 
 /* RECEIVE MESSAGE & REPLY */
 app.post("/", async (req, res) => {
-  console.log("Webhook received");
-  console.log(JSON.stringify(req.body, null, 2));
+  console.log("Webhook received:", JSON.stringify(req.body, null, 2));
 
   try {
     const entry = req.body.entry?.[0];
@@ -82,7 +29,7 @@ app.post("/", async (req, res) => {
     const value = change?.value;
     const message = value?.messages?.[0];
 
-    if (!message || !message.text) {
+    if (!message || !message.text?.body) {
       return res.sendStatus(200);
     }
 
@@ -92,53 +39,47 @@ app.post("/", async (req, res) => {
     console.log("User:", from);
     console.log("Message:", text);
 
-    // 🔥 SEND TEST REPLY
-    // await axios.post(
-    //   `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
-    //   {
-    //     messaging_product: "whatsapp",
-    //     to: from,
-    //     text: { body: "✅ Bot is working! This is a test reply." }
-    //   },
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-    //       "Content-Type": "application/json"
-    //     }
-    //   }
-    // );
-    // 🔥 CALL HUGGING FACE LLaMA 3
-    const aiResponse = await axios.post(
-      "https://router.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
-      {
-        inputs: `
-You are a helpful, professional WhatsApp assistant for a mortgage and home loan company.
-Reply in English, Hindi, or Hinglish depending on the user's message.
+    // 🔥 OPTION 1: OLLAMA (LOCAL - RECOMMENDED, FREE)
+    let reply;
+    try {
+      const aiResponse = await axios.post("http://localhost:11434/api/chat", {
+        model: "llama3.1",  // or your model name
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful WhatsApp assistant for a mortgage and home loan company. Reply briefly, professionally, in English or Hinglish. Offer next steps."
+          },
+          {
+            role: "user",
+            content: text
+          }
+        ],
+        stream: false
+      });
 
-User: ${text}
-Assistant:
-`,
-        parameters: {
-          max_new_tokens: 200,
-          temperature: 0.6
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+      reply = aiResponse.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
+    } catch (ollamaErr) {
+      console.log("Ollama unavailable, using fallback");
+      // 🔥 OPTION 2: FALLBACK - GROQ (FAST, FREE TIER)
+      const groqResponse = await axios.post("https://api.groq.com/openai/v1/chat/completions", {
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: "You are a WhatsApp assistant for home loans. Reply briefly and professionally."
+          },
+          { role: "user", content: text }
+        ],
+        max_tokens: 150
+      }, {
+        headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` }
+      });
+      reply = groqResponse.data.choices[0].message.content;
+    }
 
-    // Extract text safely
-    const reply =
-      aiResponse.data?.[0]?.generated_text?.split("Assistant:").pop()?.trim() ||
-      "Thank you for your message! Our team will contact you shortly.";
-
-    // 🔥 SEND AI REPLY TO WHATSAPP
+    // SEND REPLY TO WHATSAPP
     await axios.post(
-      `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v20.0/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
@@ -152,10 +93,11 @@ Assistant:
       }
     );
 
+    console.log("Reply sent:", reply);
     res.sendStatus(200);
   } catch (err) {
     console.error("Error:", err.response?.data || err.message);
-    res.sendStatus(500);
+    res.sendStatus(200);  // Always 200 to WhatsApp, even on errors
   }
 });
 
