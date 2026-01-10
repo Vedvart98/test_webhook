@@ -107,32 +107,34 @@ app.post("/", async (req, res) => {
     //     }
     //   }
     // );
-    // 🔥 CALL GROQ AI
+    // 🔥 CALL HUGGING FACE LLaMA 3
     const aiResponse = await axios.post(
-      "https://api.groq.com/openai/v1/chat/completions",
+      "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
       {
-        model: "llama3-8b",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful, professional WhatsApp assistant for a mortgage and home loan company. Reply in English, Hindi, or Hinglish based on the user's message."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ]
+        inputs: `
+You are a helpful, professional WhatsApp assistant for a mortgage and home loan company.
+Reply in English, Hindi, or Hinglish depending on the user's message.
+
+User: ${text}
+Assistant:
+`,
+        parameters: {
+          max_new_tokens: 200,
+          temperature: 0.6
+        }
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
           "Content-Type": "application/json"
         }
       }
     );
 
-    const reply = aiResponse.data.choices[0].message.content;
+    // Extract text safely
+    const reply =
+      aiResponse.data?.[0]?.generated_text?.split("Assistant:").pop()?.trim() ||
+      "Thank you for your message! Our team will contact you shortly.";
 
     // 🔥 SEND AI REPLY TO WHATSAPP
     await axios.post(
