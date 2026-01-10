@@ -92,13 +92,36 @@ app.post("/", async (req, res) => {
     console.log("User:", from);
     console.log("Message:", text);
 
+    // 🔥 SEND TEST REPLY
+    // await axios.post(
+    //   `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
+    //   {
+    //     messaging_product: "whatsapp",
+    //     to: from,
+    //     text: { body: "✅ Bot is working! This is a test reply." }
+    //   },
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+    //       "Content-Type": "application/json"
+    //     }
+    //   }
+    // );
+    // 🔥 CALL GROQ AI
     const aiResponse = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama3-8b-8192",
+        model: "llama3-8b",
         messages: [
-          { role: "system", content: "You are a helpful WhatsApp assistant." },
-          { role: "user", content: text }
+          {
+            role: "system",
+            content:
+              "You are a helpful, professional WhatsApp assistant for a mortgage and home loan company. Reply in English, Hindi, or Hinglish based on the user's message."
+          },
+          {
+            role: "user",
+            content: text
+          }
         ]
       },
       {
@@ -111,13 +134,12 @@ app.post("/", async (req, res) => {
 
     const reply = aiResponse.data.choices[0].message.content;
 
-    // 🔥 SEND TEST REPLY
+    // 🔥 SEND AI REPLY TO WHATSAPP
     await axios.post(
       `${process.env.WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
-        // text: { body: "✅ Bot is working! This is a test reply." }
         text: { body: reply }
       },
       {
