@@ -109,7 +109,7 @@ app.post("/", async (req, res) => {
     // );
     // 🔥 CALL HUGGING FACE LLaMA 3
     const aiResponse = await axios.post(
-      "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
+      "https://router.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
       {
         inputs: `
 You are a helpful, professional WhatsApp assistant for a mortgage and home loan company.
