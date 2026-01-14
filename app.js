@@ -61,7 +61,7 @@ app.post("/", async (req, res) => {
     } catch (ollamaErr) {
       console.log("Ollama unavailable, using fallback");
       // 🔥 OPTION 2: FALLBACK - GROQ (FAST, FREE TIER)
-      const groqResponse = await axios.post("https://api.groq.com/openai/v1/chat/completios", {
+      const groqResponse = await axios.post("https://api.groq.com/openai/v1/chat/completions", {
         model: "llama-3.1-8b-instant",
         messages: [
           {
