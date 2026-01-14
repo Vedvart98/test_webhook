@@ -42,7 +42,9 @@ app.post("/", async (req, res) => {
     // 🔥 OPTION 1: OLLAMA (LOCAL - RECOMMENDED, FREE)
     let reply;
     try {
-      const aiResponse = await axios.post("http://localhost:11434/api/chat", {
+       console.log("Trying Ollama...");
+      // const aiResponse = await axios.post("http://localhost:11434/api/chat", {
+      const ollamaRes = await axios.post(`${process.env.OLLAMA_URL}/api/chat`,{
         model: "llama3.1",  // or your model name
         messages: [
           {
@@ -57,7 +59,9 @@ app.post("/", async (req, res) => {
         stream: false
       });
 
-      reply = aiResponse.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
+      reply = ollamaRes.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
+      console.log('ollama replied');
+      // reply = aiResponse.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
     } catch (ollamaErr) {
       console.log("Ollama unavailable, using fallback");
       // 🔥 OPTION 2: FALLBACK - GROQ (FAST, FREE TIER)
