@@ -74,12 +74,13 @@ app.post("/", async (req, res) => {
       }, {
         headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` }
       });
+      console.log('grok api');
       reply = groqResponse.data.choices[0].message.content;
     }
 
     // SEND REPLY TO WHATSAPP
     await axios.post(
-      `https://graph.facebook.com/v20.0/${process.env.PHONE_NUMBER_ID}/messages`,
+      `${WHATSAPP_API_URL}/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
