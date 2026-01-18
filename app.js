@@ -1,6 +1,6 @@
 const express = require("express");
 const axios = require("axios");
-
+const faqs = require('faqs.json')
 const app = express();
 app.use(express.json());
 
@@ -40,26 +40,59 @@ app.post("/", async (req, res) => {
     console.log("Message:", text);
 
     // 🔥 OPTION 1: OLLAMA (LOCAL - RECOMMENDED, FREE)
-    let reply;
-    try {
-       console.log("Trying Ollama...");
-      // const aiResponse = await axios.post("http://localhost:11434/api/chat", {
-      const ollamaRes = await axios.post(`${process.env.OLLAMA_URL}/api/chat`,{
-        model: "whatsapp-bot",  // or your model name
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful WhatsApp assistant for a mortgage and home loan company. Reply briefly, professionally, in English or Hinglish. Offer next steps."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
-        stream: false
-      });
+    // let reply;
+    // try {
+    //    console.log("Trying Ollama...");
+    //   // const aiResponse = await axios.post("http://localhost:11434/api/chat", {
+    //   const ollamaRes = await axios.post(`${process.env.OLLAMA_URL}/api/chat`,{
+    //     model: "whatsapp-bot",  // or your model name
+    //     messages: [
+    //       {
+    //         role: "system",
+    //         content: "You are a helpful WhatsApp assistant for a mortgage and home loan company. Reply briefly, professionally, in English or Hinglish. Offer next steps."
+    //       },
+    //       {
+    //         role: "user",
+    //         content: text
+    //       }
+    //     ],
+    //     stream: false
+    //   });
 
-      reply = ollamaRes.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
+    //   reply = ollamaRes.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
+    let context = "";
+let matchedFAQ = null;
+
+// 🔥 RAG: Find relevant FAQ
+try{
+for (const faq of faqs.faqs) {
+  const textLower = text.toLowerCase();
+  if (faq.keywords.some(keyword => textLower.includes(keyword.toLowerCase()))) {
+    context = faq.answer;
+    matchedFAQ = faq;
+    console.log("✅ RAG matched:", faq.keywords[0]);
+    break;
+  }
+}
+
+// Build smart prompt with RAG context
+const systemPrompt = context 
+  ? `You are a WhatsApp home loan assistant. Use this FAQ info: "${context}"
+
+Reply briefly (1-2 sentences), professionally in English/Hinglish. End with a question/action.`
+  : "You are a WhatsApp home loan assistant. Reply professionally, briefly in English/Hinglish. Ask for loan details.";
+
+const ollamaRes = await axios.post(`${process.env.OLLAMA_URL}/api/chat`, {
+  model: "llama3.1",  // or whatsapp-bot
+  messages: [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: text }
+  ],
+  stream: false,
+  options: { temperature: 0.3 }  // Lower for consistent replies
+});
+
+reply = ollamaRes.data.message?.content?.trim() || "Thanks! Home loan help kar sakte hain. Details share kijiye.";
       console.log('ollama replied');
       // reply = aiResponse.data.message?.content || "Thanks for messaging! How can I help with your home loan today?";
     } catch (ollamaErr) {

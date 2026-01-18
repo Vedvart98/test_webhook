@@ -1,0 +1,20 @@
+{
+  "faqs": [
+    {
+      "keywords": ["interest", "rate", "kitna", "kiska"],
+      "answer": "Home loan interest 8.5-9.5% floating rate hai. Aapke CIBIL score pe final rate decide hoga."
+    },
+    {
+      "keywords": ["emi", "monthly", "kitni"],
+      "answer": "EMI loan amount, tenure (5-30 years), aur interest rate se calculate hoti hai. Details share kijiye exact calculation ke liye."
+    },
+    {
+      "keywords": ["eligibility", "apply", "kaise"],
+      "answer": "Eligibility ke liye income proof, property papers, CIBIL score (750+), aur 21+ age chahiye. Documents share kar sakte hain?"
+    },
+    {
+      "keywords": ["documents", "papers"],
+      "answer": "Salary slips (3 months), bank statements (6 months), property papers, PAN/Aadhar, CIBIL report chahiye."
+    }
+  ]
+}
