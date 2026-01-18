@@ -1,6 +1,6 @@
 const express = require("express");
 const axios = require("axios");
-const faqs = require('faqs.json')
+const faqs = require('./faqs.json')
 const app = express();
 app.use(express.json());
 
