@@ -45,7 +45,7 @@ app.post("/", async (req, res) => {
        console.log("Trying Ollama...");
       // const aiResponse = await axios.post("http://localhost:11434/api/chat", {
       const ollamaRes = await axios.post(`${process.env.OLLAMA_URL}/api/chat`,{
-        model: "llama3.1",  // or your model name
+        model: "whatsapp-bot",  // or your model name
         messages: [
           {
             role: "system",
